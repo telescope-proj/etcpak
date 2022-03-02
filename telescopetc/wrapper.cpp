@@ -7,11 +7,94 @@ note: DecodeDxt5Part function is referenced from ETCPAC project
 #include <stdint.h>
 #include <png.h>
 
+#include "../TaskDispatch.hpp"
+#include "../ProcessDxtc.hpp"
+#include "../DataProvider.hpp"
+#include "../System.hpp"
 #include "../mmap.hpp"
 #include "wrapper.h"
+#include "BlockDataPublic.hpp"
+#include <inttypes.h>
+
+
+
+void WrapCompressDxt5(  char* input, struct mstruct *info)
+{       
+
+    bool mipmap = false;
+    bool dither = false;
+    bool rgba = false;
+    bool dxtc = true;
+    bool linearize = true;
+    bool useHeuristics = true;
+    const char* alpha = nullptr;
+  
+
+        
+    DataProvider * dp =  new DataProvider( input, mipmap, !dxtc, linearize );
+    auto num = dp->NumberOfParts();
+
+    BlockData::Type type;
+    type = BlockData::Dxt5; // *if alpha == true then use Dxt5
+
+
+    
+    auto bd = new BlockData( dp->Size(), mipmap, type );
+
+    BlockDataPtr bda;
+    if( alpha && dp->Alpha() && !rgba )
+    {
+        bda = std::make_shared<BlockData>( alpha, dp->Size(), mipmap, type );
+    }
+    // float start_decompress_time = (float)clock()/CLOCKS_PER_SEC;
+    for( int i=0; i<num; i++ )
+    {
+        auto part = dp->NextPart();
+        bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
+
+    }
+
+ 
+
+    // float end_decompress_time = (float)clock()/CLOCKS_PER_SEC;
+    // float diff_time_decompress = end_decompress_time -  start_decompress_time;
+    // printf("TIME ENcoding Time : %f\n", diff_time_decompress);
+
+    uint32_t *data32 = (uint32_t*) bd->m_data;
+    info->m_size.y = dp->Size().y;
+    info->m_size.x = dp->Size().x;
+    info->m_dataOffset = 52 + *(data32+12);
+    info->src_buf = (uint64_t*) ( bd->m_data + info->m_dataOffset );
+    // printf("bd->m_size.x: %d  %p\n",bd->m_size.x, &bd->m_size.x);
+    // printf("bd->m_size.y: %d  %p\n",bd->m_size.y, &bd->m_size.y);
+
+    // printf("info->src buf 1 %p \n", info->src_buf);
+    // printf("%" PRIu64 "\n", *(info->src_buf) );
+    printf("done\n");
+}
+
+void DecodeDXT5(struct mstruct *m){
+
+    m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
+    uint32_t* dst = m->dst_buf;
+
+    for( int y=0; y<m->m_size.y/4; y++ )
+    {   
+        for( int x=0; x<m->m_size.x/4; x++ )
+        {
+            uint64_t a = *m->src_buf++;
+            uint64_t d = *m->src_buf++;
+            DecodeDxt5Part( a, d, dst, m->m_size.x );
+            dst += 4;
+        }
+        dst += m->m_size.x*3;
+    }
+}
+
 
 void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
 {
+  
     uint8_t* ain = (uint8_t*)&a;
     uint8_t a0, a1;
     uint64_t aidx = 0;
@@ -148,23 +231,11 @@ void ReadImg(char* input, struct mstruct *m){
     fclose(m->m_file);
 }
 
-void DecodeDXT5(struct mstruct *m){
-    m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
-    uint32_t* dst = m->dst_buf;
-    for( int y=0; y<m->m_size.y/4; y++ )
-    {
-        for( int x=0; x<m->m_size.x/4; x++ )
-        {
-            uint64_t a = *m->src_buf++;
-            uint64_t d = *m->src_buf++;
-            DecodeDxt5Part( a, d, dst, m->m_size.x );
-            dst += 4;
-        }
-        dst += m->m_size.x*3;
-    }
-}
+
 
 void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
+    printf("x: %d",x);
+    printf("y: %d",y);
     FILE* f = fopen( output, "wb" );
     assert( f );
     png_structp png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
@@ -184,40 +255,40 @@ void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     fclose( f );
 }
 
-// void WrapCompressDxt5(  char* input, char* output )
-// {       
-//     bool mipmap = false;
-//     bool dither = false;
-//     bool rgba = false;
-//     bool dxtc = true;
-//     bool linearize = true;
-//     bool useHeuristics = true;
-//     const char* alpha = nullptr;
-//     unsigned int cpus = System::CPUCores();
+void OldWrapCompressDxt5(  char* input, char* output )
+{       
+    bool mipmap = false;
+    bool dither = false;
+    bool rgba = false;
+    bool dxtc = true;
+    bool linearize = true;
+    bool useHeuristics = true;
+    const char* alpha = nullptr;
+    unsigned int cpus = System::CPUCores();
 
-//     DataProvider dp( input, mipmap, !dxtc, linearize );
-//     auto num = dp.NumberOfParts();
-//     printf("num/dp.numberofparts = %d\n\n", num);
+    DataProvider dp( input, mipmap, !dxtc, linearize );
+    auto num = dp.NumberOfParts();
+    printf("num/dp.numberofparts = %d\n\n", num);
 
-//     BlockData::Type type;
-//     type = BlockData::Dxt5; // *if alpha == true then use Dxt5
+    BlockData::Type type;
+    type = BlockData::Dxt5; // *if alpha == true then use Dxt5
 
-//     TaskDispatch taskDispatch( cpus );
+    TaskDispatch taskDispatch( cpus );
 
-//     auto bd = std::make_shared<BlockData>( output, dp.Size(), mipmap, type );
-//     BlockDataPtr bda;
-//     if( alpha && dp.Alpha() && !rgba )
-//     {
-//         bda = std::make_shared<BlockData>( alpha, dp.Size(), mipmap, type );
-//     }
-//     for( int i=0; i<num; i++ )
-//     {
-//         auto part = dp.NextPart();
-//         TaskDispatch::Queue( [part, i, &bd, &dither, useHeuristics]()
-//         {
-//             bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
-//         } );
-//     }
-//     TaskDispatch::Sync();
-//     //CompressDxt5(src, dst, blocks, width );
-// }
+    auto bd = std::make_shared<BlockData>( output, dp.Size(), mipmap, type );
+    BlockDataPtr bda;
+    if( alpha && dp.Alpha() && !rgba )
+    {
+        bda = std::make_shared<BlockData>( alpha, dp.Size(), mipmap, type );
+    }
+    for( int i=0; i<num; i++ )
+    {
+        auto part = dp.NextPart();
+        TaskDispatch::Queue( [part, i, &bd, &dither, useHeuristics]()
+        {
+            bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
+        } );
+    }
+    TaskDispatch::Sync();
+    //CompressDxt5(src, dst, blocks, width );
+}
