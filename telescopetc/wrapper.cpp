@@ -1,5 +1,5 @@
 /* 
-note: DecodeDxt5Part function is referenced from ETCPAC project
+note: DecodeDxt5Part function is referenced from ETCPAK project
 */
 
 #include <cassert>
@@ -7,7 +7,7 @@ note: DecodeDxt5Part function is referenced from ETCPAC project
 #include <stdint.h>
 #include <png.h>
 
-#include "../mmap.hpp"
+#include "../mmap.hpp" // only used to open/read the Img // TODO: remove in real usecase
 #include "wrapper.h"
 
 void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
@@ -133,6 +133,88 @@ void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
     dst[3] = dict[idx & 0x3] | adict[aidx & 0x7];
 }
 
+void DecodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
+{
+    uint8_t* in = (uint8_t*)&d;
+    uint16_t c0, c1;
+    uint32_t idx;
+    memcpy( &c0, in, 2 );
+    memcpy( &c1, in+2, 2 );
+    memcpy( &idx, in+4, 4 );
+
+    uint8_t r0 = ( ( c0 & 0xF800 ) >> 8 ) | ( ( c0 & 0xF800 ) >> 13 );
+    uint8_t g0 = ( ( c0 & 0x07E0 ) >> 3 ) | ( ( c0 & 0x07E0 ) >> 9 );
+    uint8_t b0 = ( ( c0 & 0x001F ) << 3 ) | ( ( c0 & 0x001F ) >> 2 );
+
+    uint8_t r1 = ( ( c1 & 0xF800 ) >> 8 ) | ( ( c1 & 0xF800 ) >> 13 );
+    uint8_t g1 = ( ( c1 & 0x07E0 ) >> 3 ) | ( ( c1 & 0x07E0 ) >> 9 );
+    uint8_t b1 = ( ( c1 & 0x001F ) << 3 ) | ( ( c1 & 0x001F ) >> 2 );
+
+    uint32_t dict[4];
+
+    dict[0] = 0xFF000000 | ( b0 << 16 ) | ( g0 << 8 ) | r0;
+    dict[1] = 0xFF000000 | ( b1 << 16 ) | ( g1 << 8 ) | r1;
+
+    uint32_t r, g, b;
+    if( c0 > c1 )
+    {
+        r = (2*r0+r1)/3;
+        g = (2*g0+g1)/3;
+        b = (2*b0+b1)/3;
+        dict[2] = 0xFF000000 | ( b << 16 ) | ( g << 8 ) | r;
+        r = (2*r1+r0)/3;
+        g = (2*g1+g0)/3;
+        b = (2*b1+b0)/3;
+        dict[3] = 0xFF000000 | ( b << 16 ) | ( g << 8 ) | r;
+    }
+    else
+    {
+        r = (int(r0)+r1)/2;
+        g = (int(g0)+g1)/2;
+        b = (int(b0)+b1)/2;
+        dict[2] = 0xFF000000 | ( b << 16 ) | ( g << 8 ) | r;
+        dict[3] = 0xFF000000;
+    }
+
+    memcpy( dst+0, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+1, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+2, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+3, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    dst += w;
+
+    memcpy( dst+0, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+1, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+2, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+3, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    dst += w;
+
+    memcpy( dst+0, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+1, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+2, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+3, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    dst += w;
+
+    memcpy( dst+0, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+1, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+2, dict + (idx & 0x3), 4 );
+    idx >>= 2;
+    memcpy( dst+3, dict + (idx & 0x3), 4 );
+}
+
 void ReadImg(char* input, struct mstruct *m){
     m->m_file = fopen( input, "rb" );
     assert( m->m_file );
@@ -164,6 +246,21 @@ void DecodeDXT5(struct mstruct *m){
     }
 }
 
+void DecodeDXT1(struct mstruct *m){
+    m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
+    uint32_t* dst = m->dst_buf;
+    for( int y=0; y<m->m_size.y/4; y++ )
+    {
+        for( int x=0; x<m->m_size.x/4; x++ )
+        {
+            uint64_t d = *m->src_buf++;
+            DecodeDxt1Part( d, dst, m->m_size.x );
+            dst += 4;
+        }
+        dst += m->m_size.x*3;
+    }
+}
+
 void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     FILE* f = fopen( output, "wb" );
     assert( f );
@@ -183,41 +280,3 @@ void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     png_destroy_write_struct( &png_ptr, &info_ptr );
     fclose( f );
 }
-
-// void WrapCompressDxt5(  char* input, char* output )
-// {       
-//     bool mipmap = false;
-//     bool dither = false;
-//     bool rgba = false;
-//     bool dxtc = true;
-//     bool linearize = true;
-//     bool useHeuristics = true;
-//     const char* alpha = nullptr;
-//     unsigned int cpus = System::CPUCores();
-
-//     DataProvider dp( input, mipmap, !dxtc, linearize );
-//     auto num = dp.NumberOfParts();
-//     printf("num/dp.numberofparts = %d\n\n", num);
-
-//     BlockData::Type type;
-//     type = BlockData::Dxt5; // *if alpha == true then use Dxt5
-
-//     TaskDispatch taskDispatch( cpus );
-
-//     auto bd = std::make_shared<BlockData>( output, dp.Size(), mipmap, type );
-//     BlockDataPtr bda;
-//     if( alpha && dp.Alpha() && !rgba )
-//     {
-//         bda = std::make_shared<BlockData>( alpha, dp.Size(), mipmap, type );
-//     }
-//     for( int i=0; i<num; i++ )
-//     {
-//         auto part = dp.NextPart();
-//         TaskDispatch::Queue( [part, i, &bd, &dither, useHeuristics]()
-//         {
-//             bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
-//         } );
-//     }
-//     TaskDispatch::Sync();
-//     //CompressDxt5(src, dst, blocks, width );
-// }

@@ -11,10 +11,11 @@ int main()
     /** Code here **/
     struct mstruct m;
 
-    ReadImg("test_compressed.pvr", &m);
+    ReadImg("testdxtc.pvr", &m);
     float st = (float)clock()/CLOCKS_PER_SEC;
     // *src buffer: m.src_buf | dst buffer: m.dst_buf
     DecodeDXT5(&m); 
+    // DecodeDXT1(&m); 
     float et = (float)clock()/CLOCKS_PER_SEC;
     float dt = et - st;
     printf("Decoding Time : %f\n", dt);

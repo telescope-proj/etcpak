@@ -27,3 +27,4 @@ struct mstruct
 EXPORT_C  void  ReadImg(char* input, struct mstruct *m);
 EXPORT_C  void  RenderImg(char* output, int32_t x, int32_t y, uint32_t * data_buf);
 EXPORT_C  void  DecodeDXT5(struct mstruct *m);
+EXPORT_C  void  DecodeDXT1(struct mstruct *m);
