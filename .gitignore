@@ -7,3 +7,7 @@ build/*.vcxproj.user
 unix/etcpak
 *.o
 *.d
+
+telescopetc/build
+telescopetc/assets
+telescopetc/out
