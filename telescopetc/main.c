@@ -39,13 +39,13 @@ int main(int argc, char *argv[])
             exit(1);
         }
         struct mstruct m2;
-        ReadImg("../assets/DXT1.pvr", &m2);
+        ReadImg(argv[2], &m2);
         st = (float)clock()/CLOCKS_PER_SEC;
         DecodeDXT1(&m2); 
         et = (float)clock()/CLOCKS_PER_SEC;
         dt2 = et - st;
         printf("DXT1 Decoding Time : %f\n", dt2);
-        RenderImg("../out/DXT1out.png", m2.m_size.x, m2.m_size.y, m2.dst_buf);
+        RenderImg(argv[3], m2.m_size.x, m2.m_size.y, m2.dst_buf);
     }
     else{printf("invalid arguments");}
 
