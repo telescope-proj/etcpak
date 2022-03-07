@@ -7,7 +7,7 @@ note: DecodeDxt5Part function is referenced from ETCPAK project
 #include <stdint.h>
 #include <png.h>
 
-#include "../mmap.hpp" // only used to open/read the Img // TODO: remove in real usecase
+// #include "../mmap.hpp" // only used to open/read the Img // TODO: remove in real usecase
 #include "wrapper.h"
 
 void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
@@ -215,22 +215,23 @@ void DecodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
     memcpy( dst+3, dict + (idx & 0x3), 4 );
 }
 
-void ReadImg(char* input, struct mstruct *m){
-    m->m_file = fopen( input, "rb" );
-    assert( m->m_file );
-    fseek( m->m_file, 0, SEEK_END );
-    m->m_maplen = ftell( m->m_file );
-    fseek( m->m_file, 0, SEEK_SET );
-    m->m_data = (uint8_t*)mmap( nullptr, m->m_maplen, PROT_READ, MAP_SHARED, fileno( m->m_file ), 0 );
-    uint32_t *data32 = (uint32_t*) m->m_data;
-    m->m_size.y = *(data32+6);
-    m->m_size.x = *(data32+7);
-    m->m_dataOffset = 52 + *(data32+12);
-    m->src_buf = (uint64_t*)( m->m_data + m->m_dataOffset );
-    fclose(m->m_file);
-}
+// void ReadImg(char* input, struct mstruct *m){
+//     m->m_file = fopen( input, "rb" );
+//     assert( m->m_file );
+//     fseek( m->m_file, 0, SEEK_END );
+//     m->m_maplen = ftell( m->m_file );
+//     fseek( m->m_file, 0, SEEK_SET );
+//     m->m_data = (uint8_t*)mmap( nullptr, m->m_maplen, PROT_READ, MAP_SHARED, fileno( m->m_file ), 0 );
+//     uint32_t *data32 = (uint32_t*) m->m_data;
+//     m->m_size.y = *(data32+6);
+//     m->m_size.x = *(data32+7);
+//     m->m_dataOffset = 52 + *(data32+12);
+//     m->src_buf = (uint64_t*)( m->m_data + m->m_dataOffset );
+//     fclose(m->m_file);
+// }
 
 void DecodeDXT5(struct mstruct *m){
+    printf("Decoding DXT5");
     m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
     uint32_t* dst = m->dst_buf;
     for( int y=0; y<m->m_size.y/4; y++ )
@@ -247,6 +248,7 @@ void DecodeDXT5(struct mstruct *m){
 }
 
 void DecodeDXT1(struct mstruct *m){
+    printf("Decoding DXT1");
     m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
     uint32_t* dst = m->dst_buf;
     for( int y=0; y<m->m_size.y/4; y++ )
