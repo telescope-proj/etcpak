@@ -7,10 +7,10 @@ note: DecodeDxt5Part function is referenced from ETCPAK project
 #include <stdint.h>
 #include <png.h>
 
-// #include "../mmap.hpp" // only used to open/read the Img // TODO: remove in real usecase
-#include "wrapper.h"
+#include "mmap.hpp" // only used to open/read the Img
+#include "ttc_wrapper.h"
 
-void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
+void decodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
 {
     uint8_t* ain = (uint8_t*)&a;
     uint8_t a0, a1;
@@ -133,7 +133,7 @@ void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
     dst[3] = dict[idx & 0x3] | adict[aidx & 0x7];
 }
 
-void DecodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
+void decodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
 {
     uint8_t* in = (uint8_t*)&d;
     uint16_t c0, c1;
@@ -215,55 +215,55 @@ void DecodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
     memcpy( dst+3, dict + (idx & 0x3), 4 );
 }
 
-// void ReadImg(char* input, struct mstruct *m){
-//     m->m_file = fopen( input, "rb" );
-//     assert( m->m_file );
-//     fseek( m->m_file, 0, SEEK_END );
-//     m->m_maplen = ftell( m->m_file );
-//     fseek( m->m_file, 0, SEEK_SET );
-//     m->m_data = (uint8_t*)mmap( nullptr, m->m_maplen, PROT_READ, MAP_SHARED, fileno( m->m_file ), 0 );
-//     uint32_t *data32 = (uint32_t*) m->m_data;
-//     m->m_size.y = *(data32+6);
-//     m->m_size.x = *(data32+7);
-//     m->m_dataOffset = 52 + *(data32+12);
-//     m->src_buf = (uint64_t*)( m->m_data + m->m_dataOffset );
-//     fclose(m->m_file);
-// }
+void ttcReadImg(char* input, struct TTCFrameProps *m){
+    m->f_file = fopen( input, "rb" );
+    assert( m->f_file );
+    fseek( m->f_file, 0, SEEK_END );
+    m->f_maplen = ftell( m->f_file );
+    fseek( m->f_file, 0, SEEK_SET );
+    m->f_data = (uint8_t*)mmap( nullptr, m->f_maplen, PROT_READ, MAP_SHARED, fileno( m->f_file ), 0 );
+    uint32_t *data32 = (uint32_t*) m->f_data;
+    m->f_size.y = *(data32+6);
+    m->f_size.x = *(data32+7);
+    m->f_dataOffset = 52 + *(data32+12);
+    m->src_buf = (uint64_t*)( m->f_data + m->f_dataOffset );
+    fclose(m->f_file);
+}
 
-void DecodeDXT5(struct mstruct *m){
+void ttcDecodeDXT5(struct TTCFrameProps *m){
     printf("Decoding DXT5");
-    m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
+    m->dst_buf = new uint32_t [m->f_size.x*m->f_size.y];
     uint32_t* dst = m->dst_buf;
-    for( int y=0; y<m->m_size.y/4; y++ )
+    for( int y=0; y<m->f_size.y/4; y++ )
     {
-        for( int x=0; x<m->m_size.x/4; x++ )
+        for( int x=0; x<m->f_size.x/4; x++ )
         {
             uint64_t a = *m->src_buf++;
             uint64_t d = *m->src_buf++;
-            DecodeDxt5Part( a, d, dst, m->m_size.x );
+            decodeDxt5Part( a, d, dst, m->f_size.x );
             dst += 4;
         }
-        dst += m->m_size.x*3;
+        dst += m->f_size.x*3;
     }
 }
 
-void DecodeDXT1(struct mstruct *m){
+void ttcDecodeDXT1(struct TTCFrameProps *m){
     printf("Decoding DXT1");
-    m->dst_buf = new uint32_t [m->m_size.x*m->m_size.y];
+    m->dst_buf = new uint32_t [m->f_size.x*m->f_size.y];
     uint32_t* dst = m->dst_buf;
-    for( int y=0; y<m->m_size.y/4; y++ )
+    for( int y=0; y<m->f_size.y/4; y++ )
     {
-        for( int x=0; x<m->m_size.x/4; x++ )
+        for( int x=0; x<m->f_size.x/4; x++ )
         {
             uint64_t d = *m->src_buf++;
-            DecodeDxt1Part( d, dst, m->m_size.x );
+            decodeDxt1Part( d, dst, m->f_size.x );
             dst += 4;
         }
-        dst += m->m_size.x*3;
+        dst += m->f_size.x*3;
     }
 }
 
-void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
+void ttcRenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     FILE* f = fopen( output, "wb" );
     assert( f );
     png_structp png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );

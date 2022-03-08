@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "wrapper.h"
+#include "ttc_wrapper.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,14 +23,14 @@ int main(int argc, char *argv[])
             fprintf(stderr,"main: invalid number of arguments\n");
             exit(1);
         }
-        struct mstruct m1;
-        ReadImg(argv[2], &m1);
+        struct TTCFrameProps m1;
+        ttcReadImg(argv[2], &m1);
         st = (float)clock()/CLOCKS_PER_SEC;
-        DecodeDXT5(&m1);  
+        ttcDecodeDXT5(&m1);  
         et = (float)clock()/CLOCKS_PER_SEC;
         dt1 = et - st;
         printf("DXT5 Decoding Time : %f\n", dt1);
-        RenderImg(argv[3], m1.m_size.x, m1.m_size.y, m1.dst_buf);
+        ttcRenderImg(argv[3], m1.f_size.x, m1.f_size.y, m1.dst_buf);
     }
     else if (!strcmp(argv[1], "dxt1"))
     {
@@ -38,16 +38,15 @@ int main(int argc, char *argv[])
             fprintf(stderr,"main: invalid number of arguments\n");
             exit(1);
         }
-        struct mstruct m2;
-        ReadImg(argv[2], &m2);
+        struct TTCFrameProps m2;
+        ttcReadImg(argv[2], &m2);
         st = (float)clock()/CLOCKS_PER_SEC;
-        DecodeDXT1(&m2); 
+        ttcDecodeDXT1(&m2); 
         et = (float)clock()/CLOCKS_PER_SEC;
         dt2 = et - st;
         printf("DXT1 Decoding Time : %f\n", dt2);
-        RenderImg(argv[3], m2.m_size.x, m2.m_size.y, m2.dst_buf);
+        ttcRenderImg(argv[3], m2.f_size.x, m2.f_size.y, m2.dst_buf);
     }
     else{printf("invalid arguments");}
-
     return 0;
 }

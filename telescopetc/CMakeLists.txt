@@ -1,14 +1,15 @@
-# add_executable(telescopetc main.c)
+add_executable(telescopetc main.c)
 include_directories(include)
 set(SOURCES
-    src/wrapper.cpp
+    src/ttc_wrapper.cpp
+    src/mmap.cpp
 )
 
 add_library(ttc STATIC ${SOURCES})
 
 find_library(Libpng NAMES png)
 
-target_link_libraries(ttc PUBLIC png)
+target_link_libraries(telescopetc PUBLIC ttc png)
 set_property(TARGET ttc PROPERTY C_STANDARD 99)
 
 target_include_directories(ttc
