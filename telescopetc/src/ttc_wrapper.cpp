@@ -1,5 +1,5 @@
 /* 
-note: DecodeDxt5Part function is referenced from ETCPAK project
+    *note: DecodeDxt5Part function is referenced from ETCPAK project
 */
 
 #include <cassert>
@@ -221,7 +221,8 @@ void ttcReadImg(char* input, struct TTCFrameProps *m){
     fseek( m->f_file, 0, SEEK_END );
     m->f_maplen = ftell( m->f_file );
     fseek( m->f_file, 0, SEEK_SET );
-    m->f_data = (uint8_t*)mmap( nullptr, m->f_maplen, PROT_READ, MAP_SHARED, fileno( m->f_file ), 0 );
+    m->f_data = (uint8_t*)mmap( nullptr, m->f_maplen, PROT_READ, 
+                                MAP_SHARED, fileno( m->f_file ), 0);
     uint32_t *data32 = (uint32_t*) m->f_data;
     m->f_size.y = *(data32+6);
     m->f_size.x = *(data32+7);
@@ -266,11 +267,14 @@ void ttcDecodeDXT1(struct TTCFrameProps *m){
 void ttcRenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     FILE* f = fopen( output, "wb" );
     assert( f );
-    png_structp png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );
+    png_structp png_ptr = png_create_write_struct(  PNG_LIBPNG_VER_STRING, 
+                                                    NULL, NULL, NULL );
     png_infop info_ptr = png_create_info_struct( png_ptr );
     setjmp( png_jmpbuf( png_ptr ) );
     png_init_io( png_ptr, f );
-    png_set_IHDR( png_ptr, info_ptr, x, y, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE );
+    png_set_IHDR(   png_ptr, info_ptr, x, y, 8, PNG_COLOR_TYPE_RGB_ALPHA, 
+                    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, 
+                    PNG_FILTER_TYPE_BASE );
     png_write_info( png_ptr, info_ptr );
     uint32_t* ptr = dst_buf;
     for( int i=0; i<y; i++ )

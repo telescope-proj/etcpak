@@ -24,7 +24,11 @@ struct TTCFrameProps
   uint64_t*       src_buf;
 };
 
-EXPORT_C  void  ttcRenderImg(char* output, int32_t x, int32_t y, uint32_t * data_buf);
-EXPORT_C  void  ttcReadImg(char* input, struct TTCFrameProps *m);
-EXPORT_C  void  ttcDecodeDXT5(struct TTCFrameProps *m);
-EXPORT_C  void  ttcDecodeDXT1(struct TTCFrameProps *m);
+EXPORT_C void ttcRenderImg( char* output, int32_t x, int32_t y,
+                            uint32_t * data_buf);
+
+EXPORT_C void ttcReadImg(char* input, struct TTCFrameProps *m);
+
+EXPORT_C void ttcDecodeDXT5(struct TTCFrameProps *m);
+
+EXPORT_C void ttcDecodeDXT1(struct TTCFrameProps *m);
