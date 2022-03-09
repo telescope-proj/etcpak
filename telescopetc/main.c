@@ -16,7 +16,7 @@ int main()
     // ReadImg("test_compressed.pvr", &m);
     float start_compress_time = (float)clock()/CLOCKS_PER_SEC;
     
-    WrapCompressDxt5("screenshot1.png", m);
+    WrapCompressDxt5("assets/doggo.png", m);
 
     //OldWrapCompressDxt5("screenshot1.png","xxx.pvr");
     // *src buffer: m.src_buf | dst buffer: m.dst_buf

@@ -9,68 +9,103 @@ note: DecodeDxt5Part function is referenced from ETCPAC project
 
 #include "../TaskDispatch.hpp"
 #include "../ProcessDxtc.hpp"
-#include "../DataProvider.hpp"
+// #include "../DataProvider.hpp"
+#include "../Bitmap.hpp"
 #include "../System.hpp"
 #include "../mmap.hpp"
+#include "../BitmapDownsampled.hpp"
 #include "wrapper.h"
 #include "BlockDataPublic.hpp"
 #include <inttypes.h>
 
+struct Data
+{
+    const uint32_t* src;
+    unsigned int width;
+    unsigned int lines;
+    unsigned int offset;
+};
+struct compressWrapper
+{
+    unsigned int offset;
+    unsigned int lines;
+    bool done;
+    std::vector<std::unique_ptr<Bitmap>> m_bmp;
+    Bitmap* m_current;
+};
 
+Data NextPart(struct compressWrapper *info)
+{
+    const auto ptr = info->m_current->NextBlock( info->lines, info->done);
+    Data ret = {
+        ptr,
+        std::max<unsigned int>( 4, info->m_current->Size().x ),
+        info->lines,
+        info->offset
+    };
+
+    info->offset += info->m_current->Size().x / 4 * info->lines;
+    
+    if( info->done )
+    {
+        if( false && ( info->m_current->Size().x != 1 || info->m_current->Size().y != 1 ) )
+        {
+            info->lines *= 2;
+            info->m_bmp.emplace_back( new BitmapDownsampled( *info->m_current, info->lines, true ) );
+            info->m_current = info->m_bmp[info->m_bmp.size()-1].get();
+        }
+        else
+        {
+            info->done = true;
+        }
+    }
+    return ret;
+}
 
 void WrapCompressDxt5(  char* input, struct mstruct *info)
 {       
-
     bool mipmap = false;
-    bool dither = false;
     bool rgba = false;
     bool dxtc = true;
     bool linearize = true;
     bool useHeuristics = true;
-    const char* alpha = nullptr;
-  
+    unsigned int lines = 32;
+    unsigned int sizex = 3024;
+    unsigned int sizey = 4032;
+    
+    compressWrapper wp;
 
-        
-    DataProvider * dp =  new DataProvider( input, mipmap, !dxtc, linearize );
-    auto num = dp->NumberOfParts();
+    wp.m_bmp.emplace_back( new Bitmap( input, 32, !dxtc ) );
+    wp.m_current = wp.m_bmp[0].get();
+    bool alpha = wp.m_bmp[0]->Alpha();
+    unsigned int parts = ( ( sizex / 4 ) + lines - 1 ) / lines;
+    wp.offset = 0;
+    wp.lines = lines;
 
     BlockData::Type type;
-    type = BlockData::Dxt5; // *if alpha == true then use Dxt5
-
-
-    
-    auto bd = new BlockData( dp->Size(), mipmap, type );
-
-    BlockDataPtr bda;
-    if( alpha && dp->Alpha() && !rgba )
+    if( alpha )
     {
-        bda = std::make_shared<BlockData>( alpha, dp->Size(), mipmap, type );
+        type = BlockData::Dxt5;
     }
-    // float start_decompress_time = (float)clock()/CLOCKS_PER_SEC;
-    for( int i=0; i<num; i++ )
+    else
     {
-        auto part = dp->NextPart();
+        type = BlockData::Dxt1;
+    }
+
+    auto bd = new BlockData( wp.m_bmp[0]->Size(), mipmap, type );
+
+    for( int i=0; i<parts; i++ )
+    {
+        struct Data part = NextPart(&wp);
         bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
-
     }
-
- 
-
-    // float end_decompress_time = (float)clock()/CLOCKS_PER_SEC;
-    // float diff_time_decompress = end_decompress_time -  start_decompress_time;
-    // printf("TIME ENcoding Time : %f\n", diff_time_decompress);
 
     uint32_t *data32 = (uint32_t*) bd->m_data;
-    info->m_size.y = dp->Size().y;
-    info->m_size.x = dp->Size().x;
+    info->m_size.x = sizex;
+    info->m_size.y = sizey;
     info->m_dataOffset = 52 + *(data32+12);
     info->src_buf = (uint64_t*) ( bd->m_data + info->m_dataOffset );
-    // printf("bd->m_size.x: %d  %p\n",bd->m_size.x, &bd->m_size.x);
-    // printf("bd->m_size.y: %d  %p\n",bd->m_size.y, &bd->m_size.y);
 
-    // printf("info->src buf 1 %p \n", info->src_buf);
-    // printf("%" PRIu64 "\n", *(info->src_buf) );
-    printf("done\n");
 }
 
 void DecodeDXT5(struct mstruct *m){
@@ -90,7 +125,6 @@ void DecodeDXT5(struct mstruct *m){
         dst += m->m_size.x*3;
     }
 }
-
 
 void DecodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
 {
@@ -231,8 +265,6 @@ void ReadImg(char* input, struct mstruct *m){
     fclose(m->m_file);
 }
 
-
-
 void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     printf("x: %d",x);
     printf("y: %d",y);
@@ -253,42 +285,4 @@ void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
     png_write_end( png_ptr, info_ptr );
     png_destroy_write_struct( &png_ptr, &info_ptr );
     fclose( f );
-}
-
-void OldWrapCompressDxt5(  char* input, char* output )
-{       
-    bool mipmap = false;
-    bool dither = false;
-    bool rgba = false;
-    bool dxtc = true;
-    bool linearize = true;
-    bool useHeuristics = true;
-    const char* alpha = nullptr;
-    unsigned int cpus = System::CPUCores();
-
-    DataProvider dp( input, mipmap, !dxtc, linearize );
-    auto num = dp.NumberOfParts();
-    printf("num/dp.numberofparts = %d\n\n", num);
-
-    BlockData::Type type;
-    type = BlockData::Dxt5; // *if alpha == true then use Dxt5
-
-    TaskDispatch taskDispatch( cpus );
-
-    auto bd = std::make_shared<BlockData>( output, dp.Size(), mipmap, type );
-    BlockDataPtr bda;
-    if( alpha && dp.Alpha() && !rgba )
-    {
-        bda = std::make_shared<BlockData>( alpha, dp.Size(), mipmap, type );
-    }
-    for( int i=0; i<num; i++ )
-    {
-        auto part = dp.NextPart();
-        TaskDispatch::Queue( [part, i, &bd, &dither, useHeuristics]()
-        {
-            bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
-        } );
-    }
-    TaskDispatch::Sync();
-    //CompressDxt5(src, dst, blocks, width );
 }

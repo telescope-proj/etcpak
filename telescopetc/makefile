@@ -15,3 +15,7 @@ decode:
 
 clean:
 	rm -f *.o telescopetc
+
+debugg:
+	g++ -c wrapper.cpp
+	g++ main.o wrapper.o Timing.o TaskDispatch.o System.o ProcessDxtc.o Dither.o BlockDataPublic.o ProcessRGB.o Tables.o Bitmap.o DataProvider.o BitmapDownsampled.o Debug.o -o telescopetc -lpthread -lpng -llz4 -lm -lstdc++
