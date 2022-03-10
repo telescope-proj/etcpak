@@ -9,7 +9,6 @@ note: DecodeDxt5Part function is referenced from ETCPAC project
 
 #include "../TaskDispatch.hpp"
 #include "../ProcessDxtc.hpp"
-// #include "../DataProvider.hpp"
 #include "../Bitmap.hpp"
 #include "../System.hpp"
 #include "../mmap.hpp"
@@ -75,10 +74,10 @@ void WrapCompressDxt5(  char* input, struct mstruct *info)
     
     compressWrapper wp;
 
-    wp.m_bmp.emplace_back( new Bitmap( input, 32, !dxtc ) );
+    wp.m_bmp.emplace_back( new Bitmap( input, lines, !dxtc ) );
     wp.m_current = wp.m_bmp[0].get();
     bool alpha = wp.m_bmp[0]->Alpha();
-    unsigned int parts = ( ( sizex / 4 ) + lines - 1 ) / lines;
+    unsigned int num = ( ( sizex / 4 ) + lines - 1 ) / lines;
     wp.offset = 0;
     wp.lines = lines;
 
@@ -92,17 +91,17 @@ void WrapCompressDxt5(  char* input, struct mstruct *info)
         type = BlockData::Dxt1;
     }
 
-    auto bd = new BlockData( wp.m_bmp[0]->Size(), mipmap, type );
+    auto bd = new BlockData(  wp.m_bmp[0]->Size(), mipmap, type );
 
-    for( int i=0; i<parts; i++ )
+    for( int i=0; i<num; i++ )
     {
         struct Data part = NextPart(&wp);
         bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
     }
 
     uint32_t *data32 = (uint32_t*) bd->m_data;
-    info->m_size.x = sizex;
-    info->m_size.y = sizey;
+    info->m_size.y = wp.m_bmp[0]->Size().y;
+    info->m_size.x = wp.m_bmp[0]->Size().x;
     info->m_dataOffset = 52 + *(data32+12);
     info->src_buf = (uint64_t*) ( bd->m_data + info->m_dataOffset );
 

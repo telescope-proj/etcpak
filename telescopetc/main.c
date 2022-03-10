@@ -42,7 +42,7 @@ int main()
 
 
 
-    //RenderImg("ourDecode8.png", m->m_size.x, m->m_size.y, m->dst_buf);
+    RenderImg("ourDecode8.png", m->m_size.x, m->m_size.y, m->dst_buf);
 
     return 0;
 }
