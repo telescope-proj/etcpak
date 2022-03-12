@@ -31,7 +31,7 @@ public:
 
     const uint32_t* NextBlock( unsigned int& lines, bool& done );
 
-protected:
+public:
     Bitmap( const Bitmap& src, unsigned int lines );
 
     uint32_t* m_data;

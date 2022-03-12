@@ -17,6 +17,14 @@ note: DecodeDxt5Part function is referenced from ETCPAC project
 #include "BlockDataPublic.hpp"
 #include <inttypes.h>
 
+#include <future>
+#include <memory>
+#include <mutex>
+#include <stdint.h>
+
+//#include "../Semaphore.hpp"
+#include "../Vector.hpp"
+#include "../Timing.hpp"
 struct Data
 {
     const uint32_t* src;
@@ -28,10 +36,36 @@ struct compressWrapper
 {
     unsigned int offset;
     unsigned int lines;
+    unsigned int m_lines;
+    unsigned int m_linesLeft;
     bool done;
-    std::vector<std::unique_ptr<Bitmap>> m_bmp;
     Bitmap* m_current;
+    uint32_t* m_block;
+    uint32_t* m_data;
+    unsigned int m_size_x;
+    unsigned int m_size_y;
 };
+
+uint32_t* readPng(char* input) {
+    bool mipmap = false;
+    bool rgba = false;
+    bool dxtc = true;
+    bool linearize = true;
+    bool useHeuristics = true;
+    unsigned int lines = 32;
+    Bitmap *img_data = new Bitmap( input, lines, !dxtc );
+    return (uint32_t*) img_data ;
+;}
+
+const uint32_t* NextBlock(  struct compressWrapper *info )
+{
+    info->lines = std::min( info->m_lines, info->m_linesLeft );
+    auto ret = info->m_block;
+    info->m_block += info->m_size_x * 4 * info->lines;
+    info->m_linesLeft -= info->lines;
+    info->done = info->m_linesLeft == 0;
+    return ret;
+}
 
 Data NextPart(struct compressWrapper *info)
 {
@@ -43,25 +77,17 @@ Data NextPart(struct compressWrapper *info)
         info->offset
     };
 
-    info->offset += info->m_current->Size().x / 4 * info->lines;
     
+    info->offset += info->m_current->Size().x / 4 * info->lines;
+
     if( info->done )
     {
-        if( false && ( info->m_current->Size().x != 1 || info->m_current->Size().y != 1 ) )
-        {
-            info->lines *= 2;
-            info->m_bmp.emplace_back( new BitmapDownsampled( *info->m_current, info->lines, true ) );
-            info->m_current = info->m_bmp[info->m_bmp.size()-1].get();
-        }
-        else
-        {
-            info->done = true;
-        }
+        info->done = true;
     }
     return ret;
 }
 
-void WrapCompressDxt5(  char* input, struct mstruct *info)
+void WrapCompressDxt5( uint32_t* bitmap, struct mstruct *info)
 {       
     bool mipmap = false;
     bool rgba = false;
@@ -69,42 +95,42 @@ void WrapCompressDxt5(  char* input, struct mstruct *info)
     bool linearize = true;
     bool useHeuristics = true;
     unsigned int lines = 32;
-    unsigned int sizex = 3024;
-    unsigned int sizey = 4032;
     
     compressWrapper wp;
+    
+    auto bmp = (Bitmap*) bitmap;
+    wp.m_current = new Bitmap(bmp->Size());
 
-    wp.m_bmp.emplace_back( new Bitmap( input, lines, !dxtc ) );
-    wp.m_current = wp.m_bmp[0].get();
-    bool alpha = wp.m_bmp[0]->Alpha();
-    unsigned int num = ( ( sizex / 4 ) + lines - 1 ) / lines;
-    wp.offset = 0;
-    wp.lines = lines;
-
+    wp.m_current->m_block = bmp->m_block;   
+    wp.m_current->m_data = bmp->m_data;
+    wp.m_current->m_lines = bmp->m_lines;
+    wp.m_current->m_linesLeft = bmp->m_linesLeft;
+    wp.m_current->m_size = bmp->m_size;
+  
     BlockData::Type type;
-    if( alpha )
-    {
-        type = BlockData::Dxt5;
+    Channels channel;
+    if( false ) channel = Channels::Alpha;
+    else channel = Channels::RGB;
+    if( rgba ) type = BlockData::Etc2_RGBA;
+    //else if( etc2 ) type = BlockData::Etc2_RGB;
+    else if( dxtc ) type = bmp->Alpha() ? BlockData::Dxt5 : BlockData::Dxt1;
+    else type = BlockData::Etc1;
+    auto bd = new BlockData( bmp->Size(), false, type );
+    const auto localStart = GetTime();
+    if( rgba || type == BlockData::Dxt5 )
+    {   
+        bd->ProcessRGBA( wp.m_current->Data(), wp.m_current->Size().x * wp.m_current->Size().y / 16, 0, wp.m_current->Size().x, useHeuristics );
+
     }
     else
     {
-        type = BlockData::Dxt1;
+        bd->Process( bmp->Data(), bmp->Size().x * bmp->Size().y / 16, 0, bmp->Size().x, channel, false, useHeuristics );
     }
-
-    auto bd = new BlockData(  wp.m_bmp[0]->Size(), mipmap, type );
-
-    for( int i=0; i<num; i++ )
-    {
-        struct Data part = NextPart(&wp);
-        bd->ProcessRGBA( part.src, part.width / 4 * part.lines, part.offset, part.width, useHeuristics );
-    }
-
     uint32_t *data32 = (uint32_t*) bd->m_data;
-    info->m_size.y = wp.m_bmp[0]->Size().y;
-    info->m_size.x = wp.m_bmp[0]->Size().x;
+    info->m_size.x = wp.m_current->Size().x;
+    info->m_size.y = wp.m_current->Size().y;
     info->m_dataOffset = 52 + *(data32+12);
     info->src_buf = (uint64_t*) ( bd->m_data + info->m_dataOffset );
-
 }
 
 void DecodeDXT5(struct mstruct *m){
@@ -265,8 +291,6 @@ void ReadImg(char* input, struct mstruct *m){
 }
 
 void RenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
-    printf("x: %d",x);
-    printf("y: %d",y);
     FILE* f = fopen( output, "wb" );
     assert( f );
     png_structp png_ptr = png_create_write_struct( PNG_LIBPNG_VER_STRING, NULL, NULL, NULL );

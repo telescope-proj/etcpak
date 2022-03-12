@@ -11,3 +11,5 @@ unix/etcpak
 telescopetc/build
 telescopetc/assets
 telescopetc/out
+telescopetc/debug
+telescopetc/telescopetc

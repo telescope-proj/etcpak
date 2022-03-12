@@ -123,8 +123,8 @@ Bitmap::Bitmap( const char* fn, unsigned int lines, bool bgr )
         m_block = m_data = new uint32_t[w*h];
         m_linesLeft = h / 4;
 
-        m_load = std::async( std::launch::async, [this, f, png_ptr, info_ptr]() mutable
-        {
+        // m_load = std::async( std::launch::async, [this, f, png_ptr, info_ptr]() mutable
+        // {
             auto ptr = m_data;
             unsigned int lines = 0;
             for( int i=0; i<m_size.y / 4; i++ )
@@ -150,7 +150,7 @@ Bitmap::Bitmap( const char* fn, unsigned int lines, bool bgr )
             png_read_end( png_ptr, info_ptr );
             png_destroy_read_struct( &png_ptr, &info_ptr, NULL );
             fclose( f );
-        } );
+        // } );
     }
 }
 
@@ -205,10 +205,10 @@ void Bitmap::Write( const char* fn )
 
 const uint32_t* Bitmap::NextBlock( unsigned int& lines, bool& done )
 {
-    std::lock_guard<std::mutex> lock( m_lock );
+    //std::lock_guard<std::mutex> lock( m_lock );
     lines = std::min( m_lines, m_linesLeft );
     auto ret = m_block;
-    m_sema.lock();
+    // m_sema.lock();
     m_block += m_size.x * 4 * lines;
     m_linesLeft -= lines;
     done = m_linesLeft == 0;
