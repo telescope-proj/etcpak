@@ -7,22 +7,12 @@ note: DecodeDxt5Part function is referenced from ETCPAC project
 #include <stdint.h>
 #include <png.h>
 
-#include "../TaskDispatch.hpp"
-#include "../ProcessDxtc.hpp"
 #include "../Bitmap.hpp"
-#include "../System.hpp"
 #include "../mmap.hpp"
-#include "../BitmapDownsampled.hpp"
 #include "wrapper.h"
 #include "BlockDataPublic.hpp"
 #include <inttypes.h>
 
-#include <future>
-#include <memory>
-#include <mutex>
-#include <stdint.h>
-
-//#include "../Semaphore.hpp"
 #include "../Vector.hpp"
 #include "../Timing.hpp"
 struct Data
