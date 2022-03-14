@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "../include/BlockDataPublic.hpp"
+#include "BlockDataPublic.hpp"
 #include "../../ColorSpace.hpp"
 #include "../../Debug.hpp"
 #include "../../MipMap.hpp"

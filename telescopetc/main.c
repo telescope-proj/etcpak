@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
-//#include "wrapper.h"
 
 #include "include/ttc_wrapper.h"
 
