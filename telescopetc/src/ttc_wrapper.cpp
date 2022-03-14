@@ -3,22 +3,19 @@
 */
 
 #include <cassert>
+#include <inttypes.h>
+#include <png.h>
 #include <string.h>
 #include <stdint.h>
-#include <png.h>
 
 #include "mmap.hpp" // only used to open/read the Img
 #include "ttc_wrapper.h"
 
-
 #include "../../Bitmap.hpp"
 #include "../../mmap.hpp"
-#include "../include/BlockDataPublic.hpp"
-#include <inttypes.h>
-
 #include "../../Vector.hpp"
 #include "../../Timing.hpp"
-
+#include "BlockDataPublic.hpp"
 
 struct Data
 {
@@ -27,6 +24,7 @@ struct Data
     unsigned int lines;
     unsigned int offset;
 };
+
 struct compressWrapper
 {
     unsigned int offset;
@@ -40,8 +38,6 @@ struct compressWrapper
     unsigned int m_size_x;
     unsigned int m_size_y;
 };
-
-
 
 uint32_t* readPng(char* input) {
     bool mipmap = false;
@@ -61,26 +57,6 @@ const uint32_t* NextBlock(  struct compressWrapper *info )
     info->m_block += info->m_size_x * 4 * info->lines;
     info->m_linesLeft -= info->lines;
     info->done = info->m_linesLeft == 0;
-    return ret;
-}
-
-Data NextPart(struct compressWrapper *info)
-{
-    const auto ptr = info->m_current->NextBlock( info->lines, info->done);
-    Data ret = {
-        ptr,
-        std::max<unsigned int>( 4, info->m_current->Size().x ),
-        info->lines,
-        info->offset
-    };
-
-    
-    info->offset += info->m_current->Size().x / 4 * info->lines;
-
-    if( info->done )
-    {
-        info->done = true;
-    }
     return ret;
 }
 
@@ -104,31 +80,32 @@ void WrapCompressDxt5( uint32_t* bitmap, struct TTCFrameProps *info)
     wp.m_current->m_linesLeft = bmp->m_linesLeft;
     wp.m_current->m_size = bmp->m_size;
 
-
     BlockData::Type type;
     Channels channel;
+
     if( false ) channel = Channels::Alpha;
     else channel = Channels::RGB;
-    if( rgba ) type = BlockData::Etc2_RGBA;
-    else if( dxtc ) type = bmp->Alpha() ? BlockData::Dxt5 : BlockData::Dxt1;
-    else type = BlockData::Etc1;
+
+    if( dxtc ) type = bmp->Alpha() ? BlockData::Dxt5 : BlockData::Dxt1;
+
     auto bd = new BlockData( bmp->Size(), false, type );
     const auto localStart = GetTime();
     if( rgba || type == BlockData::Dxt5 )
     {   
-        bd->ProcessRGBA( wp.m_current->Data(), wp.m_current->Size().x * wp.m_current->Size().y / 16, 0, wp.m_current->Size().x, useHeuristics );
-
+        bd->ProcessRGBA( wp.m_current->Data(), 
+                         wp.m_current->Size().x * wp.m_current->Size().y / 16, 
+                         0, wp.m_current->Size().x, useHeuristics );
     }
     else
     {
-        bd->Process( bmp->Data(), bmp->Size().x * bmp->Size().y / 16, 0, bmp->Size().x, channel, false, useHeuristics );
+        bd->Process( bmp->Data(), bmp->Size().x * bmp->Size().y / 16, 0, 
+                     bmp->Size().x, channel, false, useHeuristics );
     }
     uint32_t *data32 = (uint32_t*) bd->m_data;
     info->f_size.x = wp.m_current->Size().x;
     info->f_size.y = wp.m_current->Size().y;
     info->f_dataOffset = 52 + *(data32+12);
     info->src_buf = (uint64_t*) ( bd->m_data + info->f_dataOffset );
-
 }
 
 void decodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
@@ -336,7 +313,8 @@ void decodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
     memcpy( dst+3, dict + (idx & 0x3), 4 );
 }
 
-void ttcReadImg(char* input, struct TTCFrameProps *m){
+void ttcReadImg(char* input, struct TTCFrameProps *m)
+{
     m->f_file = fopen( input, "rb" );
     assert( m->f_file );
     fseek( m->f_file, 0, SEEK_END );
@@ -352,8 +330,8 @@ void ttcReadImg(char* input, struct TTCFrameProps *m){
     fclose(m->f_file);
 }
 
-void ttcDecodeDXT5(struct TTCFrameProps *m){
-    printf("Decoding DXT5\n");
+void ttcDecodeDXT5(struct TTCFrameProps *m)
+{
     m->dst_buf = new uint32_t [m->f_size.x*m->f_size.y];
     uint32_t* dst = m->dst_buf;
     for( int y=0; y<m->f_size.y/4; y++ )
@@ -369,7 +347,8 @@ void ttcDecodeDXT5(struct TTCFrameProps *m){
     }
 }
 
-void ttcDecodeDXT1(struct TTCFrameProps *m){
+void ttcDecodeDXT1(struct TTCFrameProps *m)
+{
     printf("Decoding DXT1\n");
     m->dst_buf = new uint32_t [m->f_size.x*m->f_size.y];
     uint32_t* dst = m->dst_buf;
@@ -385,7 +364,8 @@ void ttcDecodeDXT1(struct TTCFrameProps *m){
     }
 }
 
-void ttcRenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf){
+void ttcRenderImg(char* output, int32_t x, int32_t y, uint32_t * dst_buf)
+{
     FILE* f = fopen( output, "wb" );
     assert( f );
     png_structp png_ptr = png_create_write_struct(  PNG_LIBPNG_VER_STRING, 
