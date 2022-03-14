@@ -21,7 +21,7 @@ TaskDispatch::TaskDispatch( size_t workers )
     for( size_t i=0; i<workers; i++ )
     {
         char tmp[16];
-        sprintf( tmp, "Worker %zu", i );
+        sprintf( tmp, "Worker %hhu",(unsigned char) i );
 #ifdef __APPLE__
         auto worker = std::thread( [this, tmp]{
             pthread_setname_np( tmp );

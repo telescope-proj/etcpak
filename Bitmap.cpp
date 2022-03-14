@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <png.h>
 
-#include "libpng/png.h"
 #include "lz4/lz4.h"
 
 #include "Bitmap.hpp"

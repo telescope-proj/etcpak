@@ -2399,6 +2399,8 @@ static etcpak_force_inline int GetMulSel( int sel )
     case 14:
     case 15:
         return 5;
+    default:
+        return -1;
     }
 }
 
@@ -3058,7 +3060,7 @@ static etcpak_force_inline uint64_t ProcessAlpha_ETC2( const uint8_t* src )
 
 void CompressEtc1Alpha( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width )
 {
-    int w = 0;
+    size_t w = 0;
     uint32_t buf[4*4];
     do
     {
@@ -3117,7 +3119,7 @@ void CompressEtc1Alpha( const uint32_t* src, uint64_t* dst, uint32_t blocks, siz
 
 void CompressEtc2Alpha( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width, bool useHeuristics )
 {
-    int w = 0;
+    size_t w = 0;
     uint32_t buf[4*4];
     do
     {
@@ -3179,7 +3181,7 @@ void CompressEtc2Alpha( const uint32_t* src, uint64_t* dst, uint32_t blocks, siz
 
 void CompressEtc1Rgb( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width )
 {
-    int w = 0;
+    size_t w = 0;
     uint32_t buf[4*4];
     do
     {
@@ -3223,7 +3225,7 @@ void CompressEtc1Rgb( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_
 
 void CompressEtc1RgbDither( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width )
 {
-    int w = 0;
+    size_t w = 0;
     uint32_t buf[4*4];
     do
     {
@@ -3273,7 +3275,7 @@ void CompressEtc1RgbDither( const uint32_t* src, uint64_t* dst, uint32_t blocks,
 
 void CompressEtc2Rgb( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width, bool useHeuristics )
 {
-    int w = 0;
+    size_t w = 0;
     uint32_t buf[4*4];
     do
     {
@@ -3317,7 +3319,7 @@ void CompressEtc2Rgb( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_
 
 void CompressEtc2Rgba( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width, bool useHeuristics )
 {
-    int w = 0;
+    size_t w = 0;
     uint32_t rgba[4*4];
     uint8_t alpha[4*4];
     do

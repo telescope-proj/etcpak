@@ -170,8 +170,7 @@ BlockData::BlockData( const char* fn, const v2i& size, bool mipmap, Type type )
 {
     assert( m_size.x%4 == 0 && m_size.y%4 == 0 );
 
-    uint32_t cnt = m_size.x * m_size.y / 16;
-    DBGPRINT( cnt << " blocks" );
+    DBGPRINT( (m_size.x * m_size.y / 16) << " blocks" );
 
     int levels = 1;
 

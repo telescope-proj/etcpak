@@ -16,7 +16,7 @@ set(SOURCES
     ../Debug.cpp 
 )
 
-add_definitions(-s -O3 -DNO_GZIP -DPNG_INTEL_SSE -march=native)
+add_definitions(-s -O3 -Wall -DNO_GZIP -DPNG_INTEL_SSE -march=native)
 add_library(ttc STATIC ${SOURCES})
 
 find_library(Libpng NAMES png)

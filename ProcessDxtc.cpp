@@ -809,7 +809,7 @@ void CompressDxt1( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t w
     {
         blocks /= 2;
         uint32_t buf[8*4];
-        int i = 0;
+        size_t i = 0;
         char* dst8 = (char*)dst;
 
         do
@@ -834,7 +834,7 @@ void CompressDxt1( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t w
 #endif
     {
         uint32_t buf[4*4];
-        int i = 0;
+        size_t i = 0;
 
         auto ptr = dst;
         do
@@ -865,7 +865,7 @@ void CompressDxt1( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t w
 void CompressDxt1Dither( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width )
 {
     uint32_t buf[4*4];
-    int i = 0;
+    size_t i = 0;
 
     auto ptr = dst;
     do
@@ -896,7 +896,7 @@ void CompressDxt1Dither( const uint32_t* src, uint64_t* dst, uint32_t blocks, si
 
 void CompressDxt5( const uint32_t* src, uint64_t* dst, uint32_t blocks, size_t width )
 {
-    int i = 0;
+    size_t i = 0;
     auto ptr = dst;
     do
     {

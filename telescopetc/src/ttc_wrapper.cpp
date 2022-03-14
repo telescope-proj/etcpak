@@ -40,13 +40,8 @@ struct compressWrapper
 };
 
 uint32_t* readPng(char* input) {
-    bool mipmap = false;
-    bool rgba = false;
     bool dxtc = true;
-    bool linearize = true;
-    bool useHeuristics = true;
-    unsigned int lines = 32;
-    Bitmap *img_data = new Bitmap( input, lines, !dxtc );
+    Bitmap *img_data = new Bitmap( input, 32, !dxtc );
     return (uint32_t*) img_data ;
 ;}
 
@@ -62,12 +57,9 @@ const uint32_t* NextBlock(  struct compressWrapper *info )
 
 void WrapCompressDxt5( uint32_t* bitmap, struct TTCFrameProps *info)
 {       
-    bool mipmap = false;
     bool rgba = false;
     bool dxtc = true;
-    bool linearize = true;
     bool useHeuristics = true;
-    unsigned int lines = 32;
     
     compressWrapper wp;
     
@@ -89,7 +81,6 @@ void WrapCompressDxt5( uint32_t* bitmap, struct TTCFrameProps *info)
     if( dxtc ) type = bmp->Alpha() ? BlockData::Dxt5 : BlockData::Dxt1;
 
     auto bd = new BlockData( bmp->Size(), false, type );
-    const auto localStart = GetTime();
     if( rgba || type == BlockData::Dxt5 )
     {   
         bd->ProcessRGBA( wp.m_current->Data(), 
