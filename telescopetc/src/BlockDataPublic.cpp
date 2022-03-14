@@ -1,15 +1,15 @@
 #include <assert.h>
 #include <string.h>
 
-#include "../BlockData.hpp"
-#include "../ColorSpace.hpp"
-#include "../Debug.hpp"
-#include "../MipMap.hpp"
-#include "../mmap.hpp"
-#include "../ProcessRGB.hpp"
-#include "../ProcessDxtc.hpp"
-#include "../Tables.hpp"
-#include "../TaskDispatch.hpp"
+#include "../include/BlockDataPublic.hpp"
+#include "../../ColorSpace.hpp"
+#include "../../Debug.hpp"
+#include "../../MipMap.hpp"
+#include "../../mmap.hpp"
+#include "../../ProcessRGB.hpp"
+#include "../../ProcessDxtc.hpp"
+#include "../../Tables.hpp"
+#include "../../TaskDispatch.hpp"
 
 #ifdef __ARM_NEON
 #  include <arm_neon.h>

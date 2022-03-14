@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <vector>
 
-#include "../Bitmap.hpp"
-#include "../ForceInline.hpp"
-#include "../Vector.hpp"
+#include "../../Bitmap.hpp"
+#include "../../ForceInline.hpp"
+#include "../../Vector.hpp"
 
 class BlockData
 {

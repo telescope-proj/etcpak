@@ -1,12 +1,11 @@
 all:
-	gcc main.c -o main.o -c -O3 -DNO_GZIP -DPNG_INTEL_SSE
+	gcc main.c -o main.o -c -O3 -DNO_GZIP -DPNG_INTEL_SSE -march=native
 
 c:
-	g++ -c wrapper.cpp BlockDataPublic.cpp ../Timing.cpp ../TaskDispatch.cpp ../System.cpp ../ProcessDxtc.cpp ../Dither.cpp ../BlockData.cpp ../ProcessRGB.cpp ../Tables.cpp ../Bitmap.cpp ../BitmapDownsampled.cpp ../Debug.cpp
-
+	g++ -c build/telescopetc/libttc.a -c -O3 -DNO_GZIP -DPNG_INTEL_SSE -march=native
 clean:
 	rm -f *.o telescopetc
 
 debugg:
-	g++ -c wrapper.cpp -c -O3 -DNO_GZIP -DPNG_INTEL_SSE
-	g++ main.o wrapper.o Timing.o TaskDispatch.o System.o ProcessDxtc.o Dither.o BlockDataPublic.o ProcessRGB.o Tables.o Bitmap.o BitmapDownsampled.o Debug.o -o telescopetc -lpthread -lpng -llz4 -lm -lstdc++
+	# g++ -c src/ttc_wrapper.cpp build/telescopetc/libttc.a  -c -O3 -DNO_GZIP -DPNG_INTEL_SSE -march=native
+	g++ main.o -o telescopetc build/telescopetc/libttc.a -lpthread -lpng -llz4 -lm -lstdc++ 
