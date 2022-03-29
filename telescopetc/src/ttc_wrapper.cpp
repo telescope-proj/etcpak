@@ -1,5 +1,6 @@
 /* 
-    *note: DecodeDxt5Part function is referenced from ETCPAK project
+    *note: DecodeDxt[N]Part, CompressDxt[N] function is referenced 
+    *from ETCPAK project
 */
 
 #include <cassert>
@@ -8,94 +9,28 @@
 #include <stdint.h>
 
 #include "ttc_wrapper.h"
+#include "../../ProcessDxtc.hpp"
 
-#include "../../Bitmap.hpp"
-#include "BlockDataPublic.hpp"
-
-struct Data
+void ttcEncodeDXT5( void *src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format)
 {
-    const uint32_t* src;
-    unsigned int width;
-    unsigned int lines;
-    unsigned int offset;
-};
+    if ( !src || !dst || !width || !height || !format)
+        return;
 
-struct compressWrapper
-{
-    unsigned int offset;
-    unsigned int lines;
-    unsigned int m_lines;
-    unsigned int m_linesLeft;
-    bool done;
-    Bitmap* m_current;
-    uint32_t* m_block;
-    uint32_t* m_data;
-    unsigned int m_size_x;
-    unsigned int m_size_y;
-};
-
-void ttcEncodeDXT5( uint32_t* bitmap, struct TTCFrameProps *info)
-{
-    bool useHeuristics = true;
-
-    compressWrapper wp;
-    
-    auto bmp = (Bitmap*) bitmap;
-    wp.m_current = new Bitmap(bmp->Size());
-
-    wp.m_current->m_block = bmp->m_block;   
-    wp.m_current->m_data = bmp->m_data;
-    wp.m_current->m_lines = bmp->m_lines;
-    wp.m_current->m_linesLeft = bmp->m_linesLeft;
-    wp.m_current->m_size = bmp->m_size;
-
-    BlockData::Type type;
-    type = BlockData::Dxt5;
-
-    auto bd = new BlockData( bmp->Size(), false, type );
-    bd->ProcessRGBA(wp.m_current->Data(), 
-                    wp.m_current->Size().x * wp.m_current->Size().y / 16, 
-                    0, wp.m_current->Size().x, useHeuristics 
-                    );
-
-    uint32_t *data32 = (uint32_t*) bd->m_data;
-    info->f_size.x = wp.m_current->Size().x;
-    info->f_size.y = wp.m_current->Size().y;
-    info->f_dataOffset = 52 + *(data32+12);
-    info->src_buf = (uint64_t*) ( bd->m_data + info->f_dataOffset );
+    uint32_t* lsrc = (uint32_t*)src;
+    CompressDxt5((uint32_t *) lsrc, (uint64_t *) dst,
+                width * height / 16, width);
 }
 
-void ttcEncodeDXT1( uint32_t* bitmap, struct TTCFrameProps *info)
+void ttcEncodeDXT1( void *src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format)
 {
-    bool useHeuristics = true;
+    if ( !src || !dst || !width || !height || !format)
+        return;
 
-    compressWrapper wp;
-    
-    auto bmp = (Bitmap*) bitmap;
-    wp.m_current = new Bitmap(bmp->Size());
-
-    wp.m_current->m_block = bmp->m_block;   
-    wp.m_current->m_data = bmp->m_data;
-    wp.m_current->m_lines = bmp->m_lines;
-    wp.m_current->m_linesLeft = bmp->m_linesLeft;
-    wp.m_current->m_size = bmp->m_size;
-
-    BlockData::Type type;
-    type = BlockData::Dxt1;
-
-    Channels channel;
-    channel = Channels::RGB;
-
-    auto bd = new BlockData( bmp->Size(), false, type );
-    bd->Process( bmp->Data(), bmp->Size().x * bmp->Size().y / 16, 0, 
-                 bmp->Size().x, channel, false, useHeuristics 
-                );
-
-    uint32_t *data32 = (uint32_t*) bd->m_data;
-    info->f_size.x = wp.m_current->Size().x;
-    info->f_size.y = wp.m_current->Size().y;
-    info->f_dataOffset = 52 + *(data32+12);
-    info->src_buf = (uint64_t*) ( bd->m_data + info->f_dataOffset );
+    uint32_t* lsrc = (uint32_t*)src;
+    CompressDxt1((uint32_t *) lsrc, (uint64_t *) dst,
+                width * height / 16, width);
 }
 
 void decodeDxt5Part( uint64_t a, uint64_t d, uint32_t* dst, uint32_t w )
@@ -303,35 +238,47 @@ void decodeDxt1Part( uint64_t d, uint32_t* dst, uint32_t w )
     memcpy( dst+3, dict + (idx & 0x3), 4 );
 }
 
-void ttcDecodeDXT5(struct TTCFrameProps *m)
+void ttcDecodeDXT5( void* src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format)
 {
-    m->dst_buf = new uint32_t [m->f_size.x*m->f_size.y];
-    uint32_t* dst = m->dst_buf;
-    for( int y=0; y<m->f_size.y/4; y++ )
+    if ( !src || !dst || !width || !height || !format || 
+            width % 4 || height % 4)
+        return;
+
+    // dst = new uint32_t [width*height];
+    uint32_t* ldst = (uint32_t *) dst;
+    uint64_t* lsrc = (uint64_t *) src;
+    for( uint32_t y=0; y<height/4; y++ )
     {
-        for( int x=0; x<m->f_size.x/4; x++ )
+        for( uint32_t x=0; x<width/4; x++ )
         {
-            uint64_t a = *m->src_buf++;
-            uint64_t d = *m->src_buf++;
-            decodeDxt5Part( a, d, dst, m->f_size.x );
-            dst += 4;
+            uint64_t a = *lsrc++;
+            uint64_t d = *lsrc++;
+            decodeDxt5Part( a, d, ldst, width );
+            ldst += 4;
         }
-        dst += m->f_size.x*3;
+        ldst += width*3;
     }
 }
 
-void ttcDecodeDXT1(struct TTCFrameProps *m)
+void ttcDecodeDXT1( void* src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format)
 {
-    m->dst_buf = new uint32_t [m->f_size.x*m->f_size.y];
-    uint32_t* dst = m->dst_buf;
-    for( int y=0; y<m->f_size.y/4; y++ )
+    if ( !src || !dst || !width || !height || !format ||
+            width % 4 || height % 4)
+        return;
+
+    // dst = new uint32_t [width*height];
+    uint32_t* ldst = (uint32_t *) dst;
+    uint64_t* lsrc = (uint64_t *) src;
+    for( uint32_t y=0; y<height/4; y++ )
     {
-        for( int x=0; x<m->f_size.x/4; x++ )
+        for( uint32_t x=0; x<width/4; x++ )
         {
-            uint64_t d = *m->src_buf++;
-            decodeDxt1Part( d, dst, m->f_size.x );
-            dst += 4;
+            uint64_t d = *lsrc++;
+            decodeDxt1Part( d, ldst, width );
+            ldst += 4;
         }
-        dst += m->f_size.x*3;
+        ldst += width*3;
     }
 }

@@ -1,12 +1,7 @@
 include_directories(include)
 set(SOURCES
     src/ttc_wrapper.cpp
-    src/BlockDataPublic.cpp
-    ../Dither.cpp
-    ../ProcessRGB.cpp
     ../ProcessDxtc.cpp
-    ../Tables.cpp
-    ../Bitmap.cpp
 )
 
 add_definitions(-s -O3 -Wall -DNO_GZIP -DPNG_INTEL_SSE -march=native)

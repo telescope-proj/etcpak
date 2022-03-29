@@ -4,22 +4,25 @@
   #define EXPORT_C
 #endif
 
-struct TTCDim {
-    int32_t x;
-    int32_t y;
+struct TTCFrameProps {
+    void* buffer;
+    uint32_t width;
+    uint32_t height;
+    uint32_t format;
 };
 
-struct TTCFrameProps
-{
-  uint8_t*        f_data;
-  struct  TTCDim  f_size;
-  size_t          f_dataOffset;
-  uint32_t*       dst_buf;
-  uint64_t*       src_buf;
-};
+// ************************ Encode Functions *********************************
 
-EXPORT_C void ttcDecodeDXT5(struct TTCFrameProps *m);
+EXPORT_C void ttcDecodeDXT5( void* src, void* dst, uint32_t width,
+                              uint32_t height, uint32_t format);
 
-EXPORT_C void ttcDecodeDXT1(struct TTCFrameProps *m);
+EXPORT_C void ttcDecodeDXT1( void* src, void* dst, uint32_t width,
+                              uint32_t height, uint32_t format);
 
-EXPORT_C void ttcEncodeDXT5( uint32_t* bitmap, struct TTCFrameProps *info);
+// ************************ Encode Functions *********************************
+
+EXPORT_C void ttcEncodeDXT5( void* src, void* dst, uint32_t width,
+                              uint32_t height, uint32_t format);
+
+EXPORT_C void ttcEncodeDXT1( void* src, void* dst, uint32_t width,
+                              uint32_t height, uint32_t format);
