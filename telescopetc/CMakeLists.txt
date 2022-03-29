@@ -1,6 +1,7 @@
 include_directories(include)
 set(SOURCES
     src/ttc_wrapper.cpp
+    ../Dither.cpp
     ../ProcessDxtc.cpp
 )
 
