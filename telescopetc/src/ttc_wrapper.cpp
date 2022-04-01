@@ -10,6 +10,7 @@
 
 #include "ttc_wrapper.h"
 #include "../../ProcessDxtc.hpp"
+#include "../../ProcessRGB.hpp"
 
 void ttcEncodeDXT5( void *src, void* dst, uint32_t width,
                     uint32_t height, uint32_t format)
@@ -30,6 +31,39 @@ void ttcEncodeDXT1( void *src, void* dst, uint32_t width,
 
     uint32_t* lsrc = (uint32_t*)src;
     CompressDxt1((uint32_t *) lsrc, (uint64_t *) dst,
+                width * height / 16, width);
+}
+
+void ttcEncodeETC2RGB( void *src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format, bool heuristics)
+{
+    if ( !src || !dst || !width || !height || !format)
+        return;
+
+    uint32_t* lsrc = (uint32_t*)src;
+    CompressEtc2Rgb((uint32_t *) lsrc, (uint64_t *) dst,
+                width * height / 16, width, heuristics);
+}
+
+void ttcEncodeETC2RGBA( void *src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format, bool heuristics)
+{
+    if ( !src || !dst || !width || !height || !format)
+        return;
+
+    uint32_t* lsrc = (uint32_t*)src;
+    CompressEtc2Rgba((uint32_t *) lsrc, (uint64_t *) dst,
+                width * height / 16, width, heuristics);
+}
+
+void ttcEncodeETC1RGB( void *src, void* dst, uint32_t width,
+                    uint32_t height, uint32_t format)
+{
+    if ( !src || !dst || !width || !height || !format)
+        return;
+
+    uint32_t* lsrc = (uint32_t*)src;
+    CompressEtc1Rgb((uint32_t *) lsrc, (uint64_t *) dst,
                 width * height / 16, width);
 }
 
