@@ -4,6 +4,7 @@ set(SOURCES
     ../Dither.cpp
     ../ProcessDxtc.cpp
     ../ProcessRGB.cpp
+    ../Tables.cpp
 )
 
 add_definitions(-s -O3 -Wall -DNO_GZIP -DPNG_INTEL_SSE -march=native)
